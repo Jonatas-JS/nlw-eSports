@@ -8,7 +8,6 @@ import {
 } from "@expo-google-fonts/inter";
 
 import { Home } from "./src/screens/Home";
-
 import { Background } from "./src/components/Background";
 import { Loading } from "./src/components/Loading";
 
