@@ -1,7 +1,11 @@
 import express from 'express'
 import { PrismaClient } from '@prisma/client'
+import convertHourStringToMinutes from './utils/convert-hour-string-to-minutes'
 
 const app = express()
+
+app.use(express.json()) //por padrão o Express não entende que estou usando JSON, então é necessário esse código.
+
 const prisma = new PrismaClient({ // fará a conexão com o BD automaticamente
   log: ['query']
 })
@@ -30,8 +34,24 @@ app.get('/games', async (request, response) => {
   return response.json(games);
 });
 
-app.post('/ads', (request, response) => {
-  return response.status(201).json([]);
+app.post('/games/:id/ads', async (request, response) => {
+  const gameId = request.params.id;
+  const body: any = request.body;
+
+  const ad = await prisma.ad.create({
+    data: {
+      gameId,
+      name: body.name,
+      yearsPlaying: body.yearsPlaying,
+      discor: body.discor,
+      weekDays: body.weekDays.join(','),
+      hourStart: convertHourStringToMinutes(body.hourStart),
+      hourEnd: convertHourStringToMinutes(body.hourEnd),
+      useVoiceChannel: body.useVoiceChannel,
+    }
+  })
+
+  return response.status(201).json(ad);
 });
 
 app.get('/games/:id/ads', async (request, response) => {
@@ -54,6 +74,7 @@ app.get('/games/:id/ads', async (request, response) => {
       createAt: 'desc',
     }
   })
+  
   return response.json(ads.map(ad => {
     return {
       ...ad,
@@ -65,7 +86,7 @@ app.get('/games/:id/ads', async (request, response) => {
 app.get('/ads/:id/discord', async (request, response) => {
   const adId = request.params.id;
 
-  const ad = await prisma.ad.findUnique({
+  const ad = await prisma.ad.findUniqueOrThrow({
     select: {
       discor: true,
     },
@@ -73,7 +94,10 @@ app.get('/ads/:id/discord', async (request, response) => {
       id: adId,
     }
   })
-  return response.json([])
+  return response.json({
+    discord: ad.discor,
+  })
 })
+
 
 app.listen(3333)
